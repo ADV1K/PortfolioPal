@@ -1,5 +1,6 @@
 import scrapy
 from itemloaders import ItemLoader
+
 from ..items import AlphaStreetItem
 
 MAX_PAGES = 10  # Maximum number of pages to scrape for each symbol
@@ -60,10 +61,9 @@ NIFTY50 = [
 class AlphaStreetSpider(scrapy.Spider):
     name = "alphastreet"
     allowed_domains = ["alphastreet.com"]
-    url = "https://alphastreet.com/india/symbol/{symbol}/"
-    # url = "https://alphastreet.com/india/latest-news/"
-    # start_urls = [url]
-    pagination_url = url + "page/{page_number}/"
+    symbol_url = "https://alphastreet.com/india/symbol/{}/"
+    latest_news_url = "https://alphastreet.com/india/latest-news/"
+    pagination_url = "page/{}/"
 
     # Define the categories of the articles, based on the CSS class of the article (or url)
     categories = {
@@ -79,15 +79,16 @@ class AlphaStreetSpider(scrapy.Spider):
     }
 
     def start_requests(self):
+        # Start with the latest news page
+        yield scrapy.Request(self.latest_news_url, callback=self.parse)
+
+        # Then go to the symbol pages
         for symbol in NIFTY50:
-            yield scrapy.Request(
-                self.url.format(symbol=symbol),
-                callback=self.parse,
-                meta={"page_number": 1, "dont_redirect": True},
-            )
+            url = self.symbol_url.format(symbol)
+            yield scrapy.Request(url, callback=self.parse, meta={"page": 1, "dont_redirect": True})
 
     def parse(self, response):
-        page_number = response.meta.get("page_number", 1)
+        page = response.meta.get("page", 1)
         articles = response.css("article.post")
         if not articles:
             return
@@ -111,12 +112,13 @@ class AlphaStreetSpider(scrapy.Spider):
             yield il.load_item()
 
         # If we have reached the maximum number of pages for the symbol, stop
-        if page_number >= MAX_PAGES:
+        if page >= MAX_PAGES:
             return
 
-        # Go to the next page of the symbol
-        yield response.follow(
-            self.pagination_url.format(symbol=symbol, page_number=page_number + 1),
-            callback=self.parse,
-            meta={"page_number": page_number + 1, "dont_redirect": True},
-        )
+        # Create the next page url and follow it
+        if "latest-news" in response.url:
+            url = self.latest_news_url + self.pagination_url.format(page + 1)
+        else:
+            url = self.symbol_url.format(symbol) + self.pagination_url.format(page + 1)
+
+        yield response.follow(url, callback=self.parse, meta={"page": page + 1, "dont_redirect": True})

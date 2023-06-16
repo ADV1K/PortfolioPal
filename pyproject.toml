@@ -1,18 +1,18 @@
 [tool.poetry]
-name = "portfolio-pal"
+name = "PortfolioPal"
 version = "0.1.0"
 description = ""
 authors = ["Advik <adviksingh6632@gmail.com>"]
 readme = "README.md"
-packages = [{include = "portfolio_pal"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 Scrapy = "^2.9.0"
 colorlog = "^6.7.0"
 fastapi = {extras = ["all"], version = "^0.97.0"}
-sqlalchemy = "^2.0.16"
 sqlalchemy2-stubs = "^0.0.2a34"
+fastapi-pagination = "^0.12.4"
+sqlalchemy = "^2.0.16"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.14.0"
@@ -21,3 +21,12 @@ black = "^23.3.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 120

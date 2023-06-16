@@ -3,13 +3,13 @@ import sqlite3
 
 class AlphaStreetPipeline:
     def __init__(self):
-        self.con = sqlite3.connect("alphastreet.db")
+        self.con = sqlite3.connect("sources.db")
         self.cur = self.con.cursor()
 
         # Create the table if it doesn't exist
         self.cur.execute(
             """
-        CREATE TABLE IF NOT EXISTS articles(
+        CREATE TABLE IF NOT EXISTS alphastreet (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             symbol TEXT,
             category TEXT,
@@ -22,7 +22,7 @@ class AlphaStreetPipeline:
     def process_item(self, item, spider):
         # Insert the item into the database
         self.cur.execute(
-            """INSERT OR IGNORE INTO articles (symbol, category, title, date, link) VALUES (?,?,?,?,?)""",
+            """INSERT OR IGNORE INTO alphastreet (symbol, category, title, date, link) VALUES (?,?,?,?,?)""",
             (
                 item["symbol"],
                 item["category"],

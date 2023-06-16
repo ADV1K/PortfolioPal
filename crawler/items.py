@@ -1,5 +1,5 @@
 import scrapy
-from itemloaders.processors import TakeFirst, MapCompose
+from itemloaders.processors import MapCompose, TakeFirst
 from w3lib.html import remove_tags
 
 

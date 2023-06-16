@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Enum
 from enum import StrEnum
+
+from sqlalchemy import Column, Enum, Integer, String
 
 from .database import Base
 
