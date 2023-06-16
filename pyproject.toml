@@ -10,6 +10,9 @@ packages = [{include = "portfolio_pal"}]
 python = "^3.10"
 Scrapy = "^2.9.0"
 colorlog = "^6.7.0"
+fastapi = {extras = ["all"], version = "^0.97.0"}
+sqlalchemy = "^2.0.16"
+sqlalchemy2-stubs = "^0.0.2a34"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.14.0"
