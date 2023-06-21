@@ -6,13 +6,19 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..enums import AlphaStreetCategory
 from ..models import AlphaStreet
+from ..schemas import AlphaStreetOut
 
-router = APIRouter(prefix="/alphastreet", tags=["alphastreet"])
+router = APIRouter(prefix="/alphastreet", tags=["AlphaStreet"])
 
 
-# Data access layer
-def get_latest_items(db: Session, category: str | None = None, symbol: str | None = None):
+# Query Builder
+def get_latest_items(
+    db: Session,
+    category: AlphaStreetCategory | None = None,
+    symbol: str | None = None,
+):
     query = db.query(AlphaStreet)
     if category:
         query = query.filter(AlphaStreet.category == category)
@@ -27,11 +33,18 @@ def get_latest_items(db: Session, category: str | None = None, symbol: str | Non
 
 
 # Routes
-@router.get("/latest", response_model=Page)
-async def get_latest(category: str | None = None, db: Session = Depends(get_db)):
+@router.get("/latest")
+async def get_latest(
+    category: AlphaStreetCategory | None = None,
+    db: Session = Depends(get_db),
+) -> Page[AlphaStreetOut]:
     return paginate(get_latest_items(db, category=category))
 
 
-@router.get("/{symbol}", response_model=Page)
-async def get_ticker(symbol: str, category: str | None = None, db: Session = Depends(get_db)):
+@router.get("/{symbol}")
+async def get_ticker(
+    symbol: str,
+    category: AlphaStreetCategory | None = None,
+    db: Session = Depends(get_db),
+) -> Page[AlphaStreetOut]:
     return paginate(get_latest_items(db, symbol=symbol.upper(), category=category))
