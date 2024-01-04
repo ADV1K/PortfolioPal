@@ -1,61 +1,30 @@
+from datetime import datetime
 import scrapy
+import logging
 from itemloaders import ItemLoader
+from crawler.constants import load_fundamentals
 
-from ..items import AlphaStreetItem
+from api.enums import ItemCategory
+from crawler.items import AlphaStreetItem
 
-MAX_PAGES = 10  # Maximum number of pages to scrape for each symbol
-NIFTY50 = [
-    "ADANIENT",
-    "ADANIPORTS",
-    "APOLLOHOSP",
-    "ASIANPAINT",
-    "AXISBANK",
-    "BAJAJ-AUTO",
-    "BAJFINANCE",
-    "BAJAJFINSV",
-    "BPCL",
-    "BHARTIARTL",
-    "BRITANNIA",
-    "CIPLA",
-    "COALINDIA",
-    "DIVISLAB",
-    "DRREDDY",
-    "EICHERMOT",
-    "GRASIM",
-    "HCLTECH",
-    "HDFCBANK",
-    "HDFCLIFE",
-    "HEROMOTOCO",
-    "HINDALCO",
-    "HINDUNILVR",
-    "HDFC",
-    "ICICIBANK",
-    "ITC",
-    "INDUSINDBK",
-    "INFY",
-    "JSWSTEEL",
-    "KOTAKBANK",
-    "LT",
-    "M&M",
-    "MARUTI",
-    "NTPC",
-    "NESTLEIND",
-    "ONGC",
-    "POWERGRID",
-    "RELIANCE",
-    "SBILIFE",
-    "SBIN",
-    "SUNPHARMA",
-    "TCS",
-    "TATACONSUM",
-    "TATAMOTORS",
-    "TATASTEEL",
-    "TECHM",
-    "TITAN",
-    "UPL",
-    "ULTRACEMCO",
-    "WIPRO",
-]
+
+# Maximum number of pages to scrape for each symbol
+MAX_PAGES = 10
+
+# Define the categories of the articles, based on the CSS class of the article (or url)
+CATEGORIES = {
+    "category-earnings-call-transcripts": ItemCategory.alphastreet_concall_transcripts,
+    "category-earnings-call-highlights": ItemCategory.alphastreet_concall_insights,
+    "category-earnings": ItemCategory.alphastreet_earnings,
+    "category-infographics": ItemCategory.alphastreet_infographics,
+    "category-stock-analysis": ItemCategory.alphastreet_stock_analysis,
+    "category-research-summary": ItemCategory.alphastreet_research_summary,
+    "category-research-tear-sheet": ItemCategory.alphastreet_research_tear_sheet,
+    "category-ipo": ItemCategory.alphastreet_ipo,
+    "post": ItemCategory.alphastreet_other,  # if nothing matches, use the default category.
+}
+
+logger = logging.getLogger(__name__)
 
 
 class AlphaStreetSpider(scrapy.Spider):
@@ -65,45 +34,42 @@ class AlphaStreetSpider(scrapy.Spider):
     latest_news_url = "https://alphastreet.com/india/latest-news/"
     pagination_url = "page/{}/"
 
-    # Define the categories of the articles, based on the CSS class of the article (or url)
-    categories = {
-        "category-earnings-call-transcripts": "concall_transcripts",
-        "category-earnings-call-highlights": "concall_insights",
-        "category-earnings": "earnings",
-        "category-infographics": "infographics",
-        "category-stock-analysis": "stock_analysis",
-        "category-research-summary": "research_summary",
-        "category-research-tear-sheet": "research_tear_sheet",
-        "category-ipo": "ipo",
-        "post": "other",  # if nothing matches, use the default category.
-    }
+    def __init__(self, name=None, **kwargs):
+        super().__init__(name, **kwargs)
+        self.full_crawl = bool(kwargs.get("full_crawl", False))
 
     def start_requests(self):
         # Start with the latest news page
         yield scrapy.Request(self.latest_news_url, callback=self.parse)
 
-        # Then go to the symbol pages
-        for symbol in NIFTY50:
-            url = self.symbol_url.format(symbol)
+        # Then go to the symbol pages, but only when we're doing a full crawl; passed as "-a full_crawl=1" CLI arg
+        if not self.full_crawl:
+            return
+
+        for stock in load_fundamentals():
+            url = self.symbol_url.format(stock.tradingsymbol)
             yield scrapy.Request(url, callback=self.parse, meta={"page": 1, "dont_redirect": True})
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         page = response.meta.get("page", 1)
         articles = response.css("article.post")
         if not articles:
+            logger.warning(f"DEAD END: No articles found on {response.url}")
             return
 
         # Get the symbol and category from the CSS class of the article
-        category, symbol = "other", "UNKNOWN"
+        category = ItemCategory.alphastreet_other
+        symbol = "UNKNOWN"
         for article in articles:
             for css_class in article.attrib["class"].split():
                 if css_class.startswith("Tickers-"):
-                    symbol = css_class.split("-")[1].upper()
-                if css_class in self.categories:
-                    category = self.categories[css_class]
+                    symbol = css_class.partition("-")[2].upper()
+                if css_class in CATEGORIES:
+                    category = CATEGORIES[css_class]
 
             # Pass the item into the pipeline
             il = ItemLoader(item=AlphaStreetItem(), selector=article)
+            il.add_value("scraped_date", datetime.now())
             il.add_value("category", category)
             il.add_value("symbol", symbol)
             il.add_css("title", "h2 a::text")

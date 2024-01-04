@@ -9,14 +9,21 @@ readme = "README.md"
 python = "^3.11"
 Scrapy = "^2.9.0"
 colorlog = "^6.7.0"
-fastapi = {extras = ["all"], version = "^0.97.0"}
+fastapi = {extras = ["all"], version = "^0.101.1"}
 sqlalchemy2-stubs = "^0.0.2a34"
-fastapi-pagination = "^0.12.4"
-sqlalchemy = "^2.0.16"
+fastapi-pagination = "^0.12.8"
+sqlalchemy = "^2.0.20"
+dateparser = "^1.1.8"
+psycopg2-binary = "^2.9.7"
+cloudflare = "^2.11.7"
+workers-kv-py = "^1.2.2"
+openai = "^0.28.1"
+sentry-sdk = "^1.32.0"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.14.0"
 black = "^23.3.0"
+# ruff = "^13.5.2"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,4 +1,5 @@
 import copy
+import os
 
 import scrapy.utils.log
 from colorlog import ColoredFormatter
@@ -60,15 +61,22 @@ COOKIES_ENABLED = False
 # }
 
 # Enable or disable extensions
-# See https://docs.scrapy.org/en/latest/topics/extensions.html
-# EXTENSIONS = {
-#    "scrapy.extensions.telnet.TelnetConsole": None,
-# }
+# See https://doc.scrapy.org/en/latest/topics/extensions.html
+EXTENSIONS = {
+    "crawler.extensions.SentryLogging": -1,  # Load SentryLogging extension before others
+}
+
+# Send exceptions to Sentry
+# replace SENTRY_DSN by you own DSN
+SENTRY_DSN = os.getenv("SENTRY_DSN")
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "crawler.pipelines.AlphaStreetPipeline": 300,
+    "crawler.pipelines.DuplicatesPipeline": 100,
+    "crawler.pipelines.ShortLinkPipeline": 300,
+    # "crawler.pipelines.SummaryPipeline": 600,
+    "crawler.pipelines.DatabasePipeline": 900,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -86,11 +94,11 @@ ITEM_PIPELINES = {
 
 # Enable and configure HTTP caching (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-# HTTPCACHE_ENABLED = True
-# HTTPCACHE_EXPIRATION_SECS = 0
-# HTTPCACHE_DIR = "httpcache"
-# HTTPCACHE_IGNORE_HTTP_CODES = []
-# HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+HTTPCACHE_ENABLED = True
+HTTPCACHE_EXPIRATION_SECS = 3600 * 4
+HTTPCACHE_DIR = "httpcache"
+HTTPCACHE_IGNORE_HTTP_CODES = []
+HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 # Set settings whose default value is deprecated to a future-proof value
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
@@ -124,3 +132,9 @@ def _get_handler_custom(*args, **kwargs):
 
 
 # scrapy.utils.log._get_handler = _get_handler_custom
+DOWNLOAD_STATS_ENABLED = True
+
+# prevent memory leaks
+# DEPTH_PRIORITY = 1
+# SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
+# SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'

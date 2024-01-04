@@ -1,0 +1,12 @@
+# run the youtube scraper daily at 8pm
+0 20 * * * poetry run scrapy crawl youtube 2>&1 | tee youtube.log
+
+# run the alphastreet scraper daily at 8:15pm
+15 20 * * * poetry run scrapy crawl alphastreet 2>&1 | tee alphastreet.log
+
+# run the moneycontrol scraper daily at 8:30pm
+55 21 * * * poetry run scrapy crawl moneycontrol 2>&1 | tee moneycontrol.log
+
+# only for testing
+# 13 12 * * * poetry run scrapy crawl moneycontrol 2>&1 | tee moneycontrol.log
+

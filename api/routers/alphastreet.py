@@ -5,46 +5,29 @@ from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..enums import AlphaStreetCategory
-from ..models import AlphaStreet
-from ..schemas import AlphaStreetOut
+from api.database import get_db
+from api.services import get_alphastreet_items2
+from api.enums import ItemCategory, UserType
+from api.schemas import AlphaStreetOut
 
 router = APIRouter(prefix="/alphastreet", tags=["AlphaStreet"])
-
-
-# Query Builder
-def get_latest_items(
-    db: Session,
-    category: AlphaStreetCategory | None = None,
-    symbol: str | None = None,
-):
-    query = db.query(AlphaStreet)
-    if category:
-        query = query.filter(AlphaStreet.category == category)
-    if symbol:
-        query = query.filter(AlphaStreet.symbol == symbol)
-
-    # only fetch records of the last 90 days using datetime.timedelta
-    filter_date = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
-    query = query.filter(AlphaStreet.date >= filter_date)
-
-    return query.order_by(AlphaStreet.date.desc())
 
 
 # Routes
 @router.get("/latest")
 async def get_latest(
-    category: AlphaStreetCategory | None = None,
+    category: ItemCategory | None = None,
+    user_type: UserType = UserType.new,
     db: Session = Depends(get_db),
 ) -> Page[AlphaStreetOut]:
-    return paginate(get_latest_items(db, category=category))
+    return paginate(get_alphastreet_items2(db, category=category, user_type=user_type))
 
 
 @router.get("/{symbol}")
 async def get_ticker(
     symbol: str,
-    category: AlphaStreetCategory | None = None,
+    category: ItemCategory | None = None,
+    user_type: UserType = UserType.new,
     db: Session = Depends(get_db),
 ) -> Page[AlphaStreetOut]:
-    return paginate(get_latest_items(db, symbol=symbol.upper(), category=category))
+    return paginate(get_alphastreet_items2(db, symbol=symbol.upper(), category=category, user_type=user_type))
